@@ -1,0 +1,238 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+/* Disable overscroll bounce */
+html,
+body {
+  overscroll-behavior: none;
+}
+
+/* Hide scrollbar */
+::-webkit-scrollbar {
+  display: none;
+}
+
+html {
+  scrollbar-width: none;
+}
+
+/* Chinese typography optimization */
+body {
+  letter-spacing: 0.01em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+p,
+li,
+td,
+th {
+  letter-spacing: 0.02em;
+  word-spacing: 0.05em;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  letter-spacing: 0.01em;
+}
+
+/* Light theme (default) */
+:root {
+  --background: 45 20% 97%; /* #F9F8F6 */
+  --foreground: 0 0% 10%; /* #1A1A1A */
+  --muted: 40 20% 91%; /* #EBE5DE */
+  --muted-foreground: 30 5% 42%; /* #6C6863 */
+  --accent: 156 39% 28%; /* #2D5F4C */
+  --accent-foreground: 0 0% 100%; /* #FFFFFF */
+}
+
+/* Dark theme */
+.dark {
+  --background: 0 0% 11%; /* #1c1c1c */
+  --foreground: 0 0% 92%; /* #ebebeb */
+  --muted: 0 0% 16%; /* #292929 */
+  --muted-foreground: 0 0% 60%; /* #999999 */
+  --accent: 156 39% 45%; /* #3d8b6e */
+  --accent-foreground: 0 0% 95%; /* #f2f2f2 */
+}
+
+@theme inline {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --font-sans: var(--font-inter), var(--font-noto-sans-sc), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, monospace;
+}
+
+/* Prose heading anchor styling */
+.prose h2,
+.prose h3 {
+  position: relative;
+}
+
+.prose h2 a.anchor,
+.prose h3 a.anchor {
+  text-decoration: none;
+  border-bottom: none;
+}
+
+.prose h2 a.anchor::before,
+.prose h3 a.anchor::before {
+  content: '#';
+  position: absolute;
+  left: -1.5rem;
+  opacity: 0;
+  color: hsl(var(--muted-foreground));
+  transition: opacity 0.2s ease;
+}
+
+.prose h2:hover a.anchor::before,
+.prose h3:hover a.anchor::before {
+  opacity: 1;
+}
+
+.prose h2 a.anchor:hover::before,
+.prose h3 a.anchor:hover::before {
+  color: hsl(var(--accent));
+}
+
+/* Code block styling */
+.prose pre {
+  overflow-x: auto;
+}
+
+.prose pre code {
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
+  color: inherit;
+}
+
+/* Shiki code highlighting */
+figure[data-rehype-pretty-code-figure] {
+  position: relative;
+}
+
+figure[data-rehype-pretty-code-figure] pre {
+  padding: 1rem 0;
+}
+
+pre [data-line] {
+  padding: 0 1rem;
+}
+
+code[data-line-numbers] {
+  counter-reset: line;
+}
+
+code[data-line-numbers] > [data-line]::before {
+  counter-increment: line;
+  content: counter(line);
+  display: inline-block;
+  width: 1rem;
+  margin-right: 1.5rem;
+  text-align: right;
+  color: hsl(var(--muted-foreground) / 0.5);
+}
+
+[data-highlighted-line] {
+  background: hsl(var(--accent) / 0.1);
+}
+
+[data-highlighted-chars] {
+  background: hsl(var(--accent) / 0.2);
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+}
+
+/* Shiki dual theme support */
+code[data-theme*=" "],
+code[data-theme*=" "] span {
+  color: var(--shiki-light);
+  background-color: var(--shiki-light-bg);
+}
+
+.dark code[data-theme*=" "],
+.dark code[data-theme*=" "] span {
+  color: var(--shiki-dark);
+  background-color: var(--shiki-dark-bg);
+}
+
+/* Image styling */
+.prose img {
+  border-radius: 0;
+  border: 1px solid hsl(var(--foreground) / 0.1);
+}
+
+.prose figcaption {
+  margin-top: 0.5rem;
+  text-align: center;
+  font-size: 0.875rem;
+  color: hsl(var(--muted-foreground));
+}
+
+.prose hr {
+  width: 30%;
+  margin-left: auto;
+  margin-right: auto;
+  border-style: dashed;
+  border-top-width: 2px;
+}
+
+/* Task list styling */
+.prose .contains-task-list {
+  list-style: none;
+  padding-left: 0;
+}
+
+.prose .task-list-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.prose .task-list-item input[type="checkbox"] {
+  appearance: none;
+  width: 1rem;
+  height: 1rem;
+  margin-top: 0.25rem;
+  border: 1px solid hsl(var(--foreground) / 0.3);
+  background: transparent;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.prose .task-list-item input[type="checkbox"]:checked {
+  background: hsl(var(--accent));
+  border-color: hsl(var(--accent));
+}
+
+.prose .task-list-item input[type="checkbox"]:checked::after {
+  content: '✓';
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.625rem;
+  color: hsl(var(--accent-foreground));
+  line-height: 1rem;
+}
+
+.prose .task-list-item:has(input:checked) {
+  color: hsl(var(--muted-foreground));
+  text-decoration: none;
+}
+
+/* Selection styling */
+::selection {
+  background: hsl(var(--accent) / 0.2);
+  color: inherit;
+}
+
+
