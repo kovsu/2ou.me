@@ -1,7 +1,6 @@
 'use client'
 
-import { Icon } from '@iconify/react'
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { cn } from '@/lib/utils'
 
 interface TocEntry {
@@ -14,190 +13,200 @@ interface TableOfContentsProps {
   links: TocEntry[]
 }
 
-interface FlatLink {
-  id: string
-  text: string
-  depth: number
+function TocTree({ 
+  items, 
+  activeIds, 
+  depth = 0,
+  onLinkClick 
+}: { 
+  items: TocEntry[]
+  activeIds: Set<string>
+  depth?: number
+  onLinkClick?: () => void
+}) {
+  return (
+    <ul className={cn('space-y-2', depth > 0 && 'mt-2')}>
+      {items.map((item) => {
+        const id = item.url.replace('#', '')
+        const isActive = activeIds.has(id)
+        const hasChildren = item.items?.length > 0
+
+        return (
+          <li key={id} className="relative">
+            <div className="flex items-start gap-2">
+              {depth > 0 && (
+                <span className="flex items-center h-4 shrink-0">
+                  <span className="w-3 h-px bg-foreground/20" />
+                </span>
+              )}
+              
+              <a
+                href={`#${id}`}
+                onClick={(e) => {
+                  e.preventDefault()
+                  const element = document.getElementById(id)
+                  if (element) {
+                    element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                    history.pushState(null, '', `#${id}`)
+                  }
+                  onLinkClick?.()
+                }}
+                className={cn(
+                  'block text-xs transition-all duration-200 relative',
+                  isActive
+                    ? 'text-foreground font-medium pl-2 before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:w-1 before:h-1 before:bg-foreground'
+                    : 'text-muted-foreground/60 hover:text-foreground'
+                )}
+              >
+                {item.title}
+              </a>
+            </div>
+
+            {hasChildren && (
+              <div className="ml-1 pl-2 border-l border-foreground/10">
+                <TocTree 
+                  items={item.items} 
+                  activeIds={activeIds} 
+                  depth={depth + 1}
+                  onLinkClick={onLinkClick}
+                />
+              </div>
+            )}
+          </li>
+        )
+      })}
+    </ul>
+  )
 }
 
 export function TableOfContents({ links }: TableOfContentsProps) {
   const [isOpen, setIsOpen] = useState(false)
-  const [readingProgress, setReadingProgress] = useState(0)
-  const [showBackToTop, setShowBackToTop] = useState(false)
   const [activeIds, setActiveIds] = useState<Set<string>>(new Set())
+  const [progress, setProgress] = useState(0)
 
-  function flattenLinks(links: TocEntry[], depth = 0): FlatLink[] {
-    return links.reduce<FlatLink[]>((acc, link) => {
-      const id = link.url.replace('#', '')
-      acc.push({ id, text: link.title, depth })
-      if (link.items && link.items.length > 0) {
-        acc.push(...flattenLinks(link.items, depth + 1))
-      }
-      return acc
-    }, [])
-  }
+  const updateProgress = useCallback(() => {
+    const article = document.querySelector('article')
+    if (!article) return
 
-  const flatLinks = useMemo(() => flattenLinks(links), [links])
+    const rect = article.getBoundingClientRect()
+    const scrollTop = window.scrollY
+    const articleOffsetTop = scrollTop + rect.top
+    const articleHeight = rect.height
+    const windowHeight = window.innerHeight
+
+    // 从文章开始到文章结束的进度
+    const start = articleOffsetTop
+    const end = articleOffsetTop + articleHeight - windowHeight
+    const current = scrollTop
+    
+    let percent = 0
+    if (current <= start) {
+      percent = 0
+    } else if (current >= end) {
+      percent = 100
+    } else {
+      percent = ((current - start) / (end - start)) * 100
+    }
+    
+    setProgress(percent)
+  }, [])
 
   useEffect(() => {
-    let observer: IntersectionObserver | null = null
-
-    function setupObserver() {
-      if (observer) {
-        observer.disconnect()
-      }
-
-      observer = new IntersectionObserver(
-        (entries) => {
-          setActiveIds((prev) => {
-            const newSet = new Set(prev)
-            entries.forEach((entry) => {
-              if (entry.isIntersecting) {
-                newSet.add(entry.target.id)
-              } else {
-                newSet.delete(entry.target.id)
-              }
-            })
-            return newSet
-          })
-        },
-        {
-          rootMargin: '-80px 0px 0px 0px',
-          threshold: 0,
+    const updateActiveHeadings = () => {
+      const headings = Array.from(document.querySelectorAll('article h2[id], article h3[id]'))
+      const windowHeight = window.innerHeight
+      const offset = 120 // 顶部偏移量
+      
+      const visibleIds = new Set<string>()
+      
+      headings.forEach((heading, index) => {
+        const rect = heading.getBoundingClientRect()
+        const nextHeading = headings[index + 1]
+        const nextRect = nextHeading?.getBoundingClientRect()
+        
+        // 当前 heading 在视口内（考虑顶部偏移）
+        const isInView = rect.top >= -offset && rect.top < windowHeight * 0.7
+        
+        // 当前 heading 已经滚过顶部，但下一个还没到顶部
+        const isCurrentSection = rect.top < offset && (!nextRect || nextRect.top > offset)
+        
+        if (isInView || isCurrentSection) {
+          visibleIds.add(heading.id)
         }
-      )
-
-      const headings = document.querySelectorAll(
-        'article h2[id], article h3[id], .prose h2[id], .prose h3[id]'
-      )
-
-      headings.forEach((heading) => {
-        observer!.observe(heading)
       })
-
-      if (flatLinks.length > 0) {
-        setActiveIds(new Set([flatLinks[0]!.id]))
+      
+      // 滚动到底部时高亮最后一个
+      if (visibleIds.size === 0 && headings.length > 0) {
+        const lastHeading = headings[headings.length - 1]
+        if (lastHeading.getBoundingClientRect().top < windowHeight) {
+          visibleIds.add(lastHeading.id)
+        }
       }
+      
+      setActiveIds(visibleIds)
     }
 
     const handleScroll = () => {
-      const article = document.querySelector('article')
-      if (!article) return
-
-      const rect = article.getBoundingClientRect()
-      const scrolled = -rect.top
-      const total = rect.height - window.innerHeight
-      setReadingProgress(Math.min(100, Math.max(0, (scrolled / total) * 100)))
-      setShowBackToTop(window.scrollY > 400)
+      updateProgress()
+      updateActiveHeadings()
     }
 
-    setTimeout(setupObserver, 100)
     window.addEventListener('scroll', handleScroll, { passive: true })
     handleScroll()
 
     return () => {
-      observer?.disconnect()
       window.removeEventListener('scroll', handleScroll)
     }
-  }, [flatLinks])
+  }, [updateProgress])
 
-  function scrollToHeading(id: string) {
-    const element = document.getElementById(id)
-    if (element) {
-      const offset = 100
-      const top = element.getBoundingClientRect().top + window.scrollY - offset
-      window.scrollTo({ top, behavior: 'smooth' })
-      setIsOpen(false)
-    }
-  }
-
-  function scrollToTop() {
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-  }
-
-  if (!links || links.length === 0) return null
+  if (!links?.length) return null
 
   return (
-    <nav className="toc">
+    <nav className="font-mono text-sm">
+      {/* Mobile toggle */}
       <button
-        className="lg:hidden flex items-center gap-2 w-full text-sm text-muted-foreground"
+        className="xl:hidden flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors focus-visible:ring-1 focus-visible:ring-foreground/50"
         onClick={() => setIsOpen(!isOpen)}
+        aria-label="Toggle table of contents"
+        aria-expanded={isOpen}
       >
-        <Icon icon="carbon:list" className="w-4 h-4" />
-        <span>Table of Contents</span>
-        <span className="ml-auto flex items-center gap-2">
-          <span className="text-xs text-muted-foreground/60">
-            {Math.round(readingProgress)}%
+        <span className="w-3 h-3 border border-current flex items-center justify-center">
+          <span className={cn(
+            'text-[8px] transition-transform duration-150',
+            isOpen && 'rotate-180'
+          )}>
+            ↓
           </span>
-          <Icon
-            icon="carbon:chevron-down"
-            className={cn(
-              'w-4 h-4 transition-transform duration-300',
-              isOpen && 'rotate-180'
-            )}
-          />
         </span>
+        <span>On this page</span>
       </button>
 
-      <div
-        className={cn(
-          'transition-all duration-300 ease-out',
-          isOpen ? 'mt-4' : 'hidden lg:block'
-        )}
-      >
-        <div className="hidden lg:flex items-center justify-between mb-4">
-          <p className="text-xs text-muted-foreground uppercase tracking-wider font-mono">
-            On this page
-          </p>
-          <span className="text-xs text-muted-foreground/60 font-mono">
-            {Math.round(readingProgress)}%
-          </span>
+      {/* TOC content */}
+      <div className={cn(
+        'transition-[max-height,margin] duration-200 overflow-hidden',
+        isOpen ? 'mt-4 max-h-[500px]' : 'max-h-0 xl:max-h-none'
+      )}>
+        {/* Header & Progress bar - desktop only */}
+        <div className="hidden xl:block mb-4 space-y-2">
+          <span className="text-xs text-muted-foreground">ON THIS PAGE</span>
+          <div className="flex items-center gap-3">
+            <div className="w-24 h-px bg-foreground/10 relative overflow-hidden">
+              <div 
+                className="absolute inset-y-0 left-0 bg-foreground"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+            <span className="text-[10px] text-muted-foreground/50 tabular-nums font-mono">
+              {Math.round(progress)}%
+            </span>
+          </div>
         </div>
 
-        <div className="hidden lg:block h-px mb-4 overflow-hidden bg-foreground/10">
-          <div
-            className="h-full bg-accent transition-all duration-150 ease-out"
-            style={{ width: `${readingProgress}%` }}
-          />
-        </div>
-
-        <ul className="space-y-2">
-          {flatLinks.map((link) => (
-            <li key={link.id}>
-              <a
-                href={`#${link.id}`}
-                className={cn(
-                  'block text-sm transition-all duration-200 truncate',
-                  link.depth > 0 && 'pl-3 text-xs',
-                  activeIds.has(link.id)
-                    ? 'text-accent'
-                    : 'text-foreground/40 hover:text-foreground/70'
-                )}
-                title={link.text}
-                onClick={(e) => {
-                  e.preventDefault()
-                  scrollToHeading(link.id)
-                }}
-              >
-                {link.text}
-              </a>
-            </li>
-          ))}
-        </ul>
-
-        <button
-          className={cn(
-            'mt-6 flex items-center gap-2 transition-all duration-200 group text-xs text-muted-foreground hover:text-foreground',
-            showBackToTop ? 'opacity-100' : 'opacity-40'
-          )}
-          onClick={scrollToTop}
-        >
-          <Icon
-            icon="carbon:arrow-up"
-            className="w-3.5 h-3.5 transition-transform group-hover:-translate-y-0.5"
-          />
-          <span>Back to top</span>
-        </button>
+        <TocTree 
+          items={links} 
+          activeIds={activeIds}
+          onLinkClick={() => setIsOpen(false)}
+        />
       </div>
     </nav>
   )

@@ -1,0 +1,23 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "tags": [
+    "-lintignore"
+  ],
+  "workspaces": {
+    ".": {}
+  },
+  "ignore": [
+    ".velite/**",
+    "velite.config.ts"
+  ],
+  "entry": [
+    "velite.config.ts"
+  ],
+  "ignoreDependencies": [
+    "shiki",
+    "rehype-autolink-headings",
+    "rehype-pretty-code",
+    "rehype-slug",
+    "postcss"
+  ]
+}

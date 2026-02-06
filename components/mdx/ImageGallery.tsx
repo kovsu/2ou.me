@@ -1,6 +1,7 @@
 'use client'
 
 import { ReactNode } from 'react'
+import Image from 'next/image'
 
 interface ImageGalleryProps {
   children: ReactNode
@@ -29,7 +30,7 @@ interface GalleryImageProps {
 
 export function GalleryImage({ src, alt }: GalleryImageProps) {
   return (
-    <img
+    <Image
       src={src}
       alt={alt || ''}
       className="h-64 w-auto shrink-0 snap-center border border-foreground/10 object-cover"

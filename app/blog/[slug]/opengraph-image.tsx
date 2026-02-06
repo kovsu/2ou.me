@@ -1,6 +1,4 @@
 import { ImageResponse } from 'next/og'
-import { readFile } from 'fs/promises'
-import { join } from 'path'
 import { blog } from '@/.velite'
 
 export const dynamic = 'force-static'
@@ -20,9 +18,11 @@ export default async function Image({ params }: { params: Promise<{ slug: string
 
   const title = post?.title || 'Blog'
   const description = post?.description || ''
-
-  const avatarData = await readFile(join(process.cwd(), 'public', 'monochrome.svg'))
-  const avatarBase64 = `data:image/svg+xml;base64,${avatarData.toString('base64')}`
+  const date = post?.date ? new Date(post.date).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).replace(/\//g, '.') : ''
 
   return new ImageResponse(
     (
@@ -32,21 +32,33 @@ export default async function Image({ params }: { params: Promise<{ slug: string
           width: '100%',
           display: 'flex',
           flexDirection: 'column',
-          backgroundColor: '#fafaf9',
-          fontFamily: 'Georgia, serif',
-          padding: 72,
+          backgroundColor: '#080808',
+          padding: 80,
           position: 'relative',
         }}
       >
-        {/* Left accent border */}
+        {/* Grid lines */}
         <div
           style={{
             position: 'absolute',
-            left: 0,
+            inset: 0,
+            backgroundImage: `
+              linear-gradient(to right, rgba(255,255,255,0.03) 1px, transparent 1px),
+              linear-gradient(to bottom, rgba(255,255,255,0.03) 1px, transparent 1px)
+            `,
+            backgroundSize: '80px 80px',
+          }}
+        />
+
+        {/* Left accent line */}
+        <div
+          style={{
+            position: 'absolute',
+            left: 80,
             top: 0,
             bottom: 0,
-            width: 6,
-            backgroundColor: '#2d5f4c',
+            width: 1,
+            background: 'linear-gradient(to bottom, transparent, rgba(255,255,255,0.15) 20%, rgba(255,255,255,0.15) 80%, transparent)',
           }}
         />
 
@@ -55,48 +67,60 @@ export default async function Image({ params }: { params: Promise<{ slug: string
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: 16,
-            marginBottom: 48,
+            justifyContent: 'space-between',
+            marginBottom: 60,
+            position: 'relative',
+            zIndex: 1,
           }}
         >
-          <img
-            src={avatarBase64}
-            width={44}
-            height={44}
-            style={{ objectFit: 'contain' }}
-          />
-          <div style={{ fontSize: 18, color: '#1a1a1a' }}>Konv Suu</div>
           <div
             style={{
-              width: 4,
-              height: 4,
-              borderRadius: '50%',
-              backgroundColor: '#d4d4d4',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
             }}
-          />
-          <div style={{ fontSize: 16, color: '#a3a3a3', fontFamily: 'monospace' }}>
-            Blog
+          >
+            <div
+              style={{
+                fontSize: 14,
+                color: 'rgba(255,255,255,0.4)',
+                fontFamily: 'monospace',
+              }}
+            >
+              WRITING
+            </div>
+          </div>
+          <div
+            style={{
+              fontSize: 14,
+              color: 'rgba(255,255,255,0.3)',
+              fontFamily: 'monospace',
+            }}
+          >
+            {date}
           </div>
         </div>
 
-        {/* Content */}
+        {/* Main content */}
         <div
           style={{
             flex: 1,
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'center',
+            position: 'relative',
+            zIndex: 1,
+            paddingRight: 40,
           }}
         >
           <div
             style={{
-              fontSize: 56,
-              fontStyle: 'italic',
-              color: '#1a1a1a',
-              lineHeight: 1.2,
+              fontSize: title.length > 40 ? 44 : 52,
+              fontWeight: 600,
+              color: '#f5f5f5',
               letterSpacing: '-0.02em',
+              lineHeight: 1.2,
               marginBottom: 24,
-              maxWidth: '95%',
             }}
           >
             {title}
@@ -104,10 +128,10 @@ export default async function Image({ params }: { params: Promise<{ slug: string
           {description && (
             <div
               style={{
-                fontSize: 22,
-                color: '#737373',
+                fontSize: 20,
+                color: 'rgba(255,255,255,0.45)',
                 lineHeight: 1.5,
-                maxWidth: '85%',
+                maxWidth: '90%',
               }}
             >
               {description}
@@ -118,12 +142,31 @@ export default async function Image({ params }: { params: Promise<{ slug: string
         {/* Footer */}
         <div
           style={{
-            fontSize: 15,
-            color: '#a3a3a3',
-            fontFamily: 'monospace',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            position: 'relative',
+            zIndex: 1,
           }}
         >
-          2ou.me
+          <div
+            style={{
+              fontSize: 14,
+              color: 'rgba(255,255,255,0.3)',
+              fontFamily: 'monospace',
+            }}
+          >
+            2ou.me/blog
+          </div>
+          <div
+            style={{
+              fontSize: 14,
+              color: 'rgba(255,255,255,0.4)',
+              fontFamily: 'monospace',
+            }}
+          >
+            KonvSuu
+          </div>
         </div>
       </div>
     ),

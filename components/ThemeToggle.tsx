@@ -1,23 +1,27 @@
 'use client'
 
-import { Icon } from '@iconify/react'
 import { useTheme } from '@/hooks/useTheme'
+import { cn } from '@/lib/utils'
 
 export function ThemeToggle() {
   const { isDark, toggleTheme, mounted } = useTheme()
 
-  if (!mounted) return null
+  if (!mounted) {
+    return <div className="w-4 h-4" />
+  }
 
   return (
     <button
       onClick={toggleTheme}
-      className="p-1.5 text-muted-foreground hover:text-foreground transition-colors"
+      className={cn(
+        'relative w-4 h-4 rounded-full',
+        'transition-colors duration-300',
+        'focus-visible:ring-2 focus-visible:ring-foreground/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+        isDark 
+          ? 'bg-foreground' 
+          : 'bg-transparent border border-foreground'
+      )}
       aria-label="Toggle theme"
-    >
-      <Icon
-        icon={isDark ? 'carbon:sun' : 'carbon:moon'}
-        className="w-4 h-4"
-      />
-    </button>
+    />
   )
 }

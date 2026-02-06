@@ -52,10 +52,7 @@ export default defineConfig({
       [
         rehypePrettyCode,
         {
-          theme: {
-            dark: 'vitesse-dark',
-            light: 'vitesse-light',
-          },
+          theme: 'vesper',
           keepBackground: false,
         },
       ],
@@ -76,10 +73,7 @@ export default defineConfig({
       [
         rehypePrettyCode,
         {
-          theme: {
-            dark: 'vitesse-dark',
-            light: 'vitesse-light',
-          },
+          theme: 'vesper',
           keepBackground: false,
         },
       ],

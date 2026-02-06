@@ -20,11 +20,11 @@ function CopyButton({ text }: { text: string }) {
   return (
     <button
       onClick={handleCopy}
-      className="absolute top-3 right-3 p-1.5 text-muted-foreground/50 hover:text-foreground/80 transition-colors"
+      className="absolute top-3 right-3 p-1.5 rounded text-white/30 hover:text-white/70 hover:bg-white/10 transition-all duration-200"
       aria-label="Copy code"
     >
       {copied ? (
-        <Icon icon="carbon:checkmark" className="w-4 h-4" />
+        <Icon icon="carbon:checkmark" className="w-4 h-4 text-green-400" />
       ) : (
         <Icon icon="carbon:copy" className="w-4 h-4" />
       )}
